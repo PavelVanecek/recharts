@@ -13,13 +13,18 @@ import {
   RadialBar,
   RadialBarChart,
   ResponsiveContainer,
+  Scatter,
   Tooltip,
+  useTooltipCoordinate,
   XAxis,
   YAxis,
 } from '../../../src';
 import { DefaultTooltipContent } from '../../../src/component/DefaultTooltipContent';
 import { generateMockData } from '../../../test/helper/generateMockData';
 import { RechartsHookInspector } from '../../storybook-addon-recharts/RechartsHookInspector';
+import { useIsTooltipActive, useTooltipPayload } from '../../../src/hooks';
+import { useAppSelector } from '../../../src/state/hooks';
+import { selectActiveCoordinate } from '../../../src/state/selectors/selectors';
 
 export default {
   component: Tooltip,
@@ -253,6 +258,59 @@ export const CustomContentExample = {
   args: {
     content: <CustomContent />,
     trigger: 'hover',
+  },
+};
+
+export const CustomPositionExample = {
+  render: (args: Record<string, any>, context: StoryContext) => {
+    const MyCustomTooltip = () => {
+      const isActive = useIsTooltipActive();
+      const coordinate = useAppSelector(state => selectActiveCoordinate(state, 'item', 'hover', undefined));
+      const payload = useTooltipPayload();
+
+      if (!isActive || !coordinate || !payload) {
+        return null;
+      }
+
+      return (
+        <>
+          <circle
+            cx={coordinate.x}
+            cy={coordinate.y - 23}
+            r={15}
+            fill="red"
+            style={{
+              pointerEvents: 'none',
+            }}
+          />
+          <text
+            x={coordinate.x}
+            y={coordinate.y - 20}
+            fill="black"
+            style={{
+              fontSize: '12px',
+              textAnchor: 'middle',
+              pointerEvents: 'none',
+            }}
+          >
+            {payload[1].value}
+          </text>
+        </>
+      );
+    };
+
+    return (
+      <ResponsiveContainer width="100%" height={400}>
+        <ComposedChart data={pageData}>
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Scatter dataKey="uv" />
+          <MyCustomTooltip />
+          {/* <Tooltip shared={false} content={null} /> */}
+          <RechartsHookInspector rechartsInspectorEnabled={context.rechartsInspectorEnabled} />
+        </ComposedChart>
+      </ResponsiveContainer>
+    );
   },
 };
 
