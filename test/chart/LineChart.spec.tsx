@@ -29,6 +29,7 @@ import { TickItem } from '../../src/util/types';
 import { MouseHandlerDataParam } from '../../src/synchronisation/types';
 import { mockGetBoundingClientRect } from '../helper/mockGetBoundingClientRect';
 import { useChartHeight, useChartWidth, useClipPathId, useViewBox } from '../../src/context/chartLayoutContext';
+import { expectLines } from '../helper/expectLine';
 
 describe('<LineChart />', () => {
   beforeEach(() => {
@@ -1716,5 +1717,102 @@ describe('<LineChart /> - Rendering two line charts with syncId', () => {
       vi.advanceTimersByTime(100);
       expect(container.querySelectorAll('.recharts-active-dot')).toHaveLength(0);
     });
+  });
+});
+
+describe('<LineChart /> with dataKey as a function', () => {
+  const data1 = [
+    { x: { value: 1 }, name: 'x1' },
+    { x: { value: 2 }, name: 'x2' },
+    { x: { value: 3 }, name: 'x3' },
+  ];
+  const data2 = [
+    { y: { value: 1 }, name: 'y1' },
+    { y: { value: 2 }, name: 'y2' },
+    { y: { value: 3 }, name: 'y3' },
+  ];
+  const dataKey1 = (d: any) => {
+    return d.x.value;
+  };
+  const dataKey2 = (d: any) => {
+    if (d?.y == null) {
+      debugger;
+    }
+    return d.y.value;
+  };
+
+  it('should use the return value as data points', () => {
+    const { container, rerender } = render(
+      <LineChart width={300} height={300} data={data1}>
+        <Line dataKey={dataKey1} />
+      </LineChart>,
+    );
+    expectLines(container, [{ d: 'M5,198.333L150,101.667L295,5' }]);
+
+    rerender(
+      <LineChart width={300} height={300} data={data2}>
+        <Line dataKey={dataKey2} />
+      </LineChart>,
+    );
+    expectLines(container, [{ d: 'M5,63L63,128.743L121,36.842L179,283.4L237,110.27L295,138.719' }]);
+  });
+
+  it('should call the function and give it the latest data', () => {
+    const spy = vi.fn();
+    const { rerender } = render(
+      <LineChart width={300} height={300} data={data1}>
+        <Line dataKey={spy} />
+      </LineChart>,
+    );
+
+    expect(spy).toHaveBeenCalledTimes(data1.length * 6);
+    expect(spy).toHaveBeenNthCalledWith(1, data1[0]);
+    expect(spy).toHaveBeenNthCalledWith(2, data1[1]);
+    expect(spy).toHaveBeenNthCalledWith(3, data1[2]);
+
+    spy.mockReset();
+
+    rerender(
+      <LineChart width={300} height={300} data={data2}>
+        <Line dataKey={spy} />
+      </LineChart>,
+    );
+
+    expect(spy).toHaveBeenCalledTimes(data2.length * 6);
+    expect(spy).toHaveBeenNthCalledWith(1, data2[0]);
+    expect(spy).toHaveBeenNthCalledWith(2, data2[1]);
+    expect(spy).toHaveBeenNthCalledWith(3, data2[2]);
+  });
+
+  test('reproducing https://github.com/recharts/recharts/issues/4935', () => {
+    const dataKey1 = (d: any) => {
+      return d.x;
+    };
+    const dataKey2 = (d: any) => {
+      return d.y;
+    };
+
+    const Reproduction = () => {
+      const [useData2, setUseData2] = useState(false);
+
+      return (
+        <>
+          <button type="button" onClick={() => setUseData2(true)}>
+            Use data2
+          </button>
+          <LineChart width={500} height={300} data={useData2 ? data2 : data1}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" padding={{ left: 30, right: 30 }} />
+            <YAxis />
+            <Tooltip />
+            <Line type="monotone" dataKey={useData2 ? dataKey2 : dataKey1} stroke="#8884d8" activeDot={{ r: 8 }} />
+          </LineChart>
+        </>
+      );
+    };
+
+    render(<Reproduction />);
+
+    fireEvent.click(screen.getByText('Use data2'));
   });
 });
