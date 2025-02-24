@@ -5,7 +5,6 @@ import React, { ReactElement, ReactNode, Component, SVGProps } from 'react';
 
 import get from 'lodash/get';
 import clsx from 'clsx';
-import { shallowEqual } from '../util/ShallowEqual';
 import { Layer } from '../container/Layer';
 import { Text } from '../component/Text';
 import { Label } from '../component/Label';
@@ -108,17 +107,6 @@ export class CartesianAxis extends Component<Props, IState> {
   constructor(props: Props) {
     super(props);
     this.state = { fontSize: '', letterSpacing: '' };
-  }
-
-  shouldComponentUpdate({ viewBox, ...restProps }: Props, nextState: IState) {
-    // props.viewBox is sometimes generated every time -
-    // check that specially as object equality is likely to fail
-    const { viewBox: viewBoxOld, ...restPropsOld } = this.props;
-    return (
-      !shallowEqual(viewBox, viewBoxOld) ||
-      !shallowEqual(restProps, restPropsOld) ||
-      !shallowEqual(nextState, this.state)
-    );
   }
 
   componentDidMount() {

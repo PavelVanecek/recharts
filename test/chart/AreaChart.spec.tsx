@@ -452,7 +452,7 @@ describe('AreaChart', () => {
       fireEvent.mouseUp(window);
 
       spies.forEach(el => expect(el).toHaveBeenCalledTimes(1));
-      expect(axisSpy).toHaveBeenCalledTimes(4);
+      expect(axisSpy).toHaveBeenCalledTimes(6);
     });
 
     test('should only show the last data when the brush travelers all moved to the right', () => {
